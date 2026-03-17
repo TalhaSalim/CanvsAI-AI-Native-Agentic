@@ -405,7 +405,7 @@ const PROMPT_SUGGESTIONS = [
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } },
 };
 
 const stagger = {
@@ -441,9 +441,9 @@ function cn(...classes: (string | undefined | null | false)[]): string {
 // SMALL HELPER COMPONENTS
 // ─────────────────────────────────────────────────────────────
 
-function LivePulse({ label = "Live" }: { label?: string }) {
+function LivePulse({ label = "Live", className }: { label?: string; className?: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-[#F5F5F5] text-[#111111] border border-[#CCCCCC]">
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded-full bg-[#F5F5F5] text-[#111111] border border-[#CCCCCC]", className)}>
       <span className="relative flex h-1.5 w-1.5">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#666666] opacity-75" />
         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#333333]" />
@@ -986,7 +986,7 @@ function InsightFeed({ onAction }: { onAction?: (item: InsightItem) => void }) {
           className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide"
         >
           {INSIGHTS.map((item) => (
-            <InsightCard key={item.id} item={item} onAction={onAction} />
+            <InsightCard key={item.id} item={item} onClick={onAction} />
           ))}
         </motion.div>
       </div>
@@ -2231,10 +2231,10 @@ function EmotionTreemap({ dataset }: { dataset: Dataset }) {
 
   const colFlex = (its: typeof items) => its.reduce((s, x) => s + x.pct, 0);
 
-  const Block = ({ item, className = "" }: { item: typeof items[0]; className?: string }) => (
+  const Block = ({ item, className = "", style }: { item: typeof items[0]; className?: string; style?: React.CSSProperties }) => (
     <div
       className={cn("rounded-xl p-2 flex flex-col justify-between overflow-hidden min-w-0 min-h-0", className)}
-      style={{ backgroundColor: item.color }}
+      style={{ backgroundColor: item.color, ...style }}
     >
       <span className="text-white/75 text-[10px] font-semibold leading-none">{item.pct.toFixed(1)}%</span>
       <span className="text-white text-[11px] font-semibold leading-tight line-clamp-2 mt-auto pt-1">{item.label}</span>
