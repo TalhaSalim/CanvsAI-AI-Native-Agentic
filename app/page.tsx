@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import SharedHeader from "./components/Header";
@@ -4808,7 +4808,7 @@ function GenerateReportModalGlobal({ onClose }: { onClose: () => void }) {
 
 // ─────────────────────────────────────────────────────────────
 
-export default function DatasetsPage() {
+function DatasetsPageInner() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [activeMode, setActiveMode] = useState<"studio" | "pulse">(
@@ -5018,5 +5018,13 @@ export default function DatasetsPage() {
 
     </div>
     </>
+  );
+}
+
+export default function DatasetsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DatasetsPageInner />
+    </Suspense>
   );
 }
