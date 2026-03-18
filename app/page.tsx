@@ -4203,17 +4203,63 @@ function PulsePage({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="flex-shrink-0 flex items-center gap-2 px-4 h-11 border-b border-[#E9EAEB] bg-[#FFFAF5]"
+              className="flex-shrink-0 border-b border-[#E9EAEB] bg-[#FFFAF5] h-16"
             >
-              <AsaLogoIcon className="w-4 h-4 text-[#E83069] flex-shrink-0" />
-              <span className="text-xs font-semibold text-[#1A1A1A] flex-1 truncate">Asa · Pulse</span>
-              <button
-                onClick={closePulseRight}
-                className="w-6 h-6 rounded-lg hover:bg-black/5 flex items-center justify-center transition-colors flex-shrink-0"
-                title="Close panel"
-              >
-                <X className="w-3.5 h-3.5 text-[#666]" />
-              </button>
+              <div className="flex items-center gap-3 pl-4 pr-2 h-full">
+                {/* Hamburger */}
+                <button className="p-2 rounded-lg hover:bg-black/5 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Menu className="w-5 h-5 text-[#1A1A1A]" />
+                </button>
+
+                {/* Pulse label */}
+                <span className="text-sm font-semibold text-[#1A1A1A] flex-shrink-0">Pulse</span>
+
+                {/* Divider */}
+                <div className="w-px h-4 bg-[#E2E2E2] flex-shrink-0" />
+
+                {/* Asa Pro logo area */}
+                <div className="flex items-center gap-[5.7px] px-[6.5px] py-[6.5px] flex-shrink-0">
+                  <img
+                    src="https://www.figma.com/api/mcp/asset/e02029fc-00e6-42ea-b44e-6899c1727596"
+                    alt="Asa logomark"
+                    className="w-[19.7px] h-[19.7px] block flex-shrink-0"
+                  />
+                  <img
+                    src="https://www.figma.com/api/mcp/asset/b43993da-b289-4ef7-8a7f-e1dca76bf327"
+                    alt="Asa"
+                    className="w-[44px] h-[18px] block flex-shrink-0"
+                  />
+                  <div className="bg-[#02192B] rounded-[2.2px] px-[3px] py-[1.2px] flex items-center justify-center flex-shrink-0">
+                    <img
+                      src="https://www.figma.com/api/mcp/asset/1aeec9e3-82be-431a-bf46-d4a21d659f04"
+                      alt="Pro"
+                      className="w-[13.6px] h-[6.7px] block"
+                    />
+                  </div>
+                </div>
+
+                {/* Chevron selector */}
+                <button className="p-1.5 rounded-md hover:bg-black/5 flex items-center justify-center w-6 h-6 flex-shrink-0 transition-colors">
+                  <ChevronsUpDown className="w-4 h-4 text-[#535862]" />
+                </button>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Right actions */}
+                <div className="flex items-center gap-2.5">
+                  <button className="p-1.5 rounded-md hover:bg-black/5 flex items-center justify-center w-6 h-6 flex-shrink-0 transition-colors">
+                    <Maximize2 className="w-4 h-4 text-[#535862]" />
+                  </button>
+                  <button
+                    onClick={closePulseRight}
+                    className="p-1.5 rounded-md hover:bg-black/5 flex items-center justify-center w-6 h-6 flex-shrink-0 transition-colors"
+                    title="Close panel"
+                  >
+                    <X className="w-4 h-4 text-[#535862]" />
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
