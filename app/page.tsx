@@ -3626,24 +3626,26 @@ function PulseReportTypesBubble({ richData, onSelect }: {
   onSelect: (type: string, dataset: Dataset) => void;
 }) {
   const dataset = (richData.dataset as Dataset) ?? DATASETS[0];
-  const types = [
-    { value: "Executive Summary",   icon: Star,       desc: "High-level insights for leadership" },
-    { value: "Sentiment Analysis",  icon: TrendingUp,  desc: "Deep dive into emotion & tone" },
-    { value: "Theme Report",        icon: Sparkles,    desc: "Emerging topics & cluster analysis" },
-    { value: "Dataset Comparison",  icon: GitCompare,  desc: "Side-by-side cross-dataset analysis" },
-    { value: "Quality Assessment",  icon: BarChart2,   desc: "Data health & completeness" },
-    { value: "Custom Report",       icon: Zap,         desc: "Build with your own instructions" },
-  ];
   return (
     <div className="mt-2 grid grid-cols-2 gap-2">
-      {types.map((t) => (
-        <button key={t.value} onClick={() => onSelect(t.value, dataset)}
-          className="text-left p-3 rounded-xl border border-[#F0E8E0] bg-[#FFFAF5] hover:border-[#E83069] hover:bg-white transition-all group">
-          <t.icon className="w-4 h-4 text-[#E83069] mb-1.5" />
-          <p className="text-xs font-semibold text-[#1A1A1A]">{t.value}</p>
-          <p className="text-xs text-[#888] mt-0.5 leading-relaxed">{t.desc}</p>
-        </button>
-      ))}
+      {/* Executive Summary — fully clickable */}
+      <button
+        onClick={() => onSelect("Executive Summary", dataset)}
+        className="text-left p-3 rounded-xl border border-[#F0E8E0] bg-[#FFFAF5] hover:border-[#E83069] hover:bg-white transition-all group"
+      >
+        <Star className="w-4 h-4 text-[#E83069] mb-1.5" />
+        <p className="text-xs font-semibold text-[#1A1A1A]">Executive Summary</p>
+        <p className="text-xs text-[#888] mt-0.5 leading-relaxed">High-level insights for leadership</p>
+      </button>
+
+      {/* Custom Report — disabled, coming soon */}
+      <div className="relative text-left p-3 rounded-xl border border-[#EBEBEB] bg-[#FAFAFA] cursor-not-allowed opacity-70 select-none">
+        <Zap className="w-4 h-4 text-[#BBBBBB] mb-1.5" />
+        <p className="text-xs font-semibold text-[#AAAAAA]">Custom Report</p>
+        <span className="inline-block mt-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#F0F0F0] text-[#999999] border border-[#E2E2E2]">
+          Coming Soon
+        </span>
+      </div>
     </div>
   );
 }
