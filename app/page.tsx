@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, Suspense } from "react";
-import { motion, AnimatePresence, useInView } from "framer-motion";
+import { motion, AnimatePresence, useInView, type Variants } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import SharedHeader from "./components/Header";
 import FloatingCopilot from "./components/FloatingCopilot";
@@ -403,9 +403,9 @@ const PROMPT_SUGGESTIONS = [
 // ANIMATION VARIANTS
 // ─────────────────────────────────────────────────────────────
 
-const fadeInUp = {
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 16 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
 
 const stagger = {
@@ -2189,7 +2189,7 @@ function PanelCopilot({ panelState }: { panelState: PanelState }) {
 // EMOTION TREEMAP — replaces the simple progress bar widget
 // ─────────────────────────────────────────────────────────────
 
-function EmotionTreemap({ dataset }: { dataset: Dataset }) {
+function EmotionTreemap({ dataset, selectedEmotion, onSelectEmotion }: { dataset: Dataset; selectedEmotion: string | null; onSelectEmotion: (emotion: string | null) => void }) {
   const purples = [
     "#4C1D95", "#5B21B6", "#6D28D9", "#7C3AED",
     "#8B5CF6", "#9F7AEA", "#A78BFA", "#B39DDB",
@@ -2231,15 +2231,24 @@ function EmotionTreemap({ dataset }: { dataset: Dataset }) {
 
   const colFlex = (its: typeof items) => its.reduce((s, x) => s + x.pct, 0);
 
-  const Block = ({ item, className = "", style }: { item: typeof items[0]; className?: string; style?: React.CSSProperties }) => (
-    <div
-      className={cn("rounded-xl p-2 flex flex-col justify-between overflow-hidden min-w-0 min-h-0", className)}
-      style={{ backgroundColor: item.color, ...style }}
-    >
-      <span className="text-white/75 text-[10px] font-semibold leading-none">{item.pct.toFixed(1)}%</span>
-      <span className="text-white text-[11px] font-semibold leading-tight line-clamp-2 mt-auto pt-1">{item.label}</span>
-    </div>
-  );
+  const Block = ({ item, className = "", style }: { item: typeof items[0]; className?: string; style?: React.CSSProperties }) => {
+    const isSelected = selectedEmotion === item.label;
+    const hasSelection = selectedEmotion !== null;
+    return (
+      <div
+        className={cn(
+          "rounded-xl p-2 flex flex-col justify-between overflow-hidden min-w-0 min-h-0 cursor-pointer transition-all duration-150",
+          isSelected ? "ring-2 ring-white ring-offset-1 opacity-100" : hasSelection ? "opacity-50" : "opacity-100",
+          className
+        )}
+        style={{ backgroundColor: item.color, ...style }}
+        onClick={() => onSelectEmotion(isSelected ? null : item.label)}
+      >
+        <span className="text-white/75 text-[10px] font-semibold leading-none">{item.pct.toFixed(1)}%</span>
+        <span className="text-white text-[11px] font-semibold leading-tight line-clamp-2 mt-auto pt-1">{item.label}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm">
@@ -2279,12 +2288,42 @@ function EmotionTreemap({ dataset }: { dataset: Dataset }) {
 }
 
 function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
+  const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
+  const [sentimentFilter, setSentimentFilter] = useState<"all" | "positive" | "negative" | "neutral">("all");
+  const [emotionFilter, setEmotionFilter] = useState<"all" | "positive" | "negative">("all");
+  const [askPulseWidget, setAskPulseWidget] = useState<string | null>(null);
+
   const waveData = [
     { wave: "W1", pos: dataset.sentiment.positive + 8, neg: dataset.sentiment.negative - 12 },
     { wave: "W2", pos: dataset.sentiment.positive + 2, neg: dataset.sentiment.negative - 4 },
     { wave: "W3", pos: dataset.sentiment.positive,     neg: dataset.sentiment.negative },
   ];
   if (dataset.waves >= 4) waveData.push({ wave: "W4", pos: dataset.sentiment.positive - 5, neg: dataset.sentiment.negative + 5 });
+
+  const THEME_COLORS = ["#E83069", "#7C3AED", "#2563EB", "#059669", "#D97706"];
+
+  const DISCUSSIONS_DATA = [
+    { id: "d1", emotion: "Anger", topic: dataset.topThemes[0] ?? "Payment confusion", comment: "The payment system is completely broken. I've been waiting 3 days for a resolution and nobody cares.", sentiment: "negative", user: "R. Martinez", time: "2h ago" },
+    { id: "d2", emotion: "Frustration", topic: dataset.topThemes[1] ?? "Wait time frustration", comment: "45 minutes on hold. This is unacceptable for a service we're paying for.", sentiment: "negative", user: "J. Thompson", time: "3h ago" },
+    { id: "d3", emotion: "Satisfaction", topic: dataset.topThemes[2] ?? "App usability", comment: "The new app update is much better. Finally fixed the login issues.", sentiment: "positive", user: "A. Chen", time: "4h ago" },
+    { id: "d4", emotion: "Anger", topic: dataset.topThemes[0] ?? "Payment confusion", comment: "Charged twice and no refund in sight. Escalating to management.", sentiment: "negative", user: "M. Johnson", time: "5h ago" },
+    { id: "d5", emotion: "Confusion", topic: dataset.topThemes[1] ?? "Wait time frustration", comment: "Why does it take 4 screens to do a simple check-in? The process is way too complicated.", sentiment: "negative", user: "S. Williams", time: "6h ago" },
+    { id: "d6", emotion: "Joy", topic: dataset.topThemes[2] ?? "App usability", comment: "Staff was incredibly helpful today. Best experience I've had.", sentiment: "positive", user: "K. Davis", time: "7h ago" },
+    { id: "d7", emotion: "Frustration", topic: dataset.topThemes[0] ?? "Payment confusion", comment: "I was told 3 different things by 3 different agents. No consistency.", sentiment: "negative", user: "P. Garcia", time: "8h ago" },
+    { id: "d8", emotion: "Satisfaction", topic: dataset.topThemes[3] ?? "Staff interaction", comment: "Quick response and my issue was solved in one call. Impressed.", sentiment: "positive", user: "L. Brown", time: "9h ago" },
+  ];
+
+  const filteredDiscussions = selectedEmotion
+    ? DISCUSSIONS_DATA.filter(d => d.emotion === selectedEmotion)
+    : DISCUSSIONS_DATA;
+
+  const handleAskPulse = (widgetName: string) => {
+    setAskPulseWidget(widgetName);
+    console.log("Ask Pulse:", widgetName);
+  };
+
+  const positiveEmotions = ["Satisfaction", "Joy", "Enthusiasm", "Hope", "Anticipation", "Strong Agreement", "Positive Sentiments"];
+  const negativeEmotions = ["Anger", "Frustration", "Confusion", "Critical Feedback", "Uncertainty", "Concern"];
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-5">
@@ -2320,51 +2359,163 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
         ))}
       </div>
 
-      {/* Dataset Health & Quality — between KPIs and Sentiment */}
+      {/* Dataset Health & Quality */}
       <DatasetHealthCards dataset={dataset} />
 
-      {/* Sentiment */}
-      <div className="bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm">
-        <div className="text-xs font-semibold text-[#222222] mb-3 flex items-center gap-1.5">
+      {/* Sentiment Breakdown */}
+      <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
+        <div className="text-xs font-semibold text-[#222222] mb-2 flex items-center gap-1.5">
           <BarChart2 className="w-3.5 h-3.5 text-[#666666]" /> Sentiment Breakdown
+        </div>
+        {/* Sentiment filter pills */}
+        <div className="flex gap-1.5 mb-3 flex-wrap">
+          {(["all", "positive", "negative", "neutral"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setSentimentFilter(f)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors",
+                sentimentFilter === f ? "bg-[#E83069] text-white" : "bg-[#F5F5F5] text-[#666]"
+              )}
+            >
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
         </div>
         <SentimentBar {...dataset.sentiment} />
         <div className="mt-4 grid grid-cols-3 gap-2">
           {[
-            { label: "Positive", val: dataset.sentiment.positive, color: "bg-[#777777]", text: "text-[#333333]" },
-            { label: "Negative", val: dataset.sentiment.negative, color: "bg-[#888888]", text: "text-[#333333]" },
-            { label: "Neutral",  val: dataset.sentiment.neutral,  color: "bg-[#CCCCCC]", text: "text-[#666666]" },
-          ].map(({ label, val, color, text }) => (
-            <div key={label} className="text-center">
-              <div className={cn("text-lg font-bold", text)}>{val}%</div>
-              <div className="flex items-center justify-center gap-1 mt-0.5">
-                <div className={cn("w-2 h-2 rounded-full", color)} />
-                <span className="text-xs text-[#999999]">{label}</span>
+            { label: "Positive", val: dataset.sentiment.positive, dotColor: "bg-[#22c55e]", text: "text-[#16a34a]", key: "positive" as const },
+            { label: "Negative", val: dataset.sentiment.negative, dotColor: "bg-[#E83069]", text: "text-[#E83069]", key: "negative" as const },
+            { label: "Neutral",  val: dataset.sentiment.neutral,  dotColor: "bg-[#94a3b8]", text: "text-[#666666]", key: "neutral" as const },
+          ]
+            .filter(({ key }) => sentimentFilter === "all" || sentimentFilter === key)
+            .map(({ label, val, dotColor, text }) => (
+              <div key={label} className="text-center">
+                <div className={cn("text-lg font-bold", text)}>{val}%</div>
+                <div className="flex items-center justify-center gap-1 mt-0.5">
+                  <div className={cn("w-2 h-2 rounded-full", dotColor)} />
+                  <span className="text-xs text-[#999999]">{label}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
+        <button
+          onClick={() => handleAskPulse("Sentiment Breakdown")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
       </div>
 
       {/* Emotion Classification Treemap */}
-      <EmotionTreemap dataset={dataset} />
+      <div className="group relative pb-5">
+        <div className="flex gap-1.5 mb-2 flex-wrap">
+          {(["all", "positive", "negative"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setEmotionFilter(f)}
+              className={cn(
+                "px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors",
+                emotionFilter === f ? "bg-[#E83069] text-white" : "bg-[#F5F5F5] text-[#666]"
+              )}
+            >
+              {f === "all" ? "All" : f === "positive" ? "Positive Emotions" : "Negative Emotions"}
+            </button>
+          ))}
+        </div>
+        <EmotionTreemap
+          dataset={dataset}
+          selectedEmotion={selectedEmotion}
+          onSelectEmotion={(emotion) => {
+            if (emotionFilter === "positive" && emotion && negativeEmotions.includes(emotion)) return;
+            if (emotionFilter === "negative" && emotion && positiveEmotions.includes(emotion)) return;
+            setSelectedEmotion(emotion);
+          }}
+        />
+        <button
+          onClick={() => handleAskPulse("Emotion Classification")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
+      </div>
+
+      {/* Discussions */}
+      <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <MessageSquare className="w-3.5 h-3.5 text-[#666666]" />
+            <span className="text-xs font-semibold text-[#222222]">Discussions</span>
+          </div>
+          {selectedEmotion && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-[#E83069] bg-[#FFF0F5] px-2 py-0.5 rounded-full font-semibold">
+                Filtered by: {selectedEmotion}
+              </span>
+              <button
+                onClick={() => setSelectedEmotion(null)}
+                className="text-[10px] text-[#999] hover:text-[#E83069] transition-colors font-semibold"
+              >
+                ✕ Clear
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+          {filteredDiscussions.length === 0 ? (
+            <div className="text-xs text-[#999] text-center py-6">No discussions match this emotion.</div>
+          ) : filteredDiscussions.map((disc) => {
+            const isNegativeEmotion = ["Anger", "Frustration", "Confusion"].includes(disc.emotion);
+            return (
+              <div key={disc.id} className="bg-[#FAFAFA] rounded-xl p-3 border border-[#F0F0F0]">
+                <div className="flex items-start gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full bg-[#F5F5F5] flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-[#555]">
+                    {disc.user.charAt(0)}
+                  </div>
+                  <p className="text-xs text-[#333333] leading-relaxed flex-1">{disc.comment}</p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={cn(
+                    "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                    isNegativeEmotion ? "bg-[#FFF0F5] text-[#E83069]" : "bg-[#F0FFF4] text-[#16a34a]"
+                  )}>
+                    {disc.emotion}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F5F5F5] text-[#555]">{disc.topic}</span>
+                  <span className="text-[10px] text-[#999] ml-auto">{disc.user} · {disc.time}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => handleAskPulse("Discussions")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
+      </div>
 
       {/* Wave trend */}
-      <div className="bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm">
+      <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
         <div className="text-xs font-semibold text-[#222222] mb-3">Wave-over-Wave Sentiment Trend</div>
         <div className="flex items-end gap-2 h-20">
           {waveData.map(({ wave, pos, neg }) => (
             <div key={wave} className="flex-1 flex flex-col items-center gap-1">
               <div className="w-full flex flex-col gap-0.5">
                 <motion.div
-                  className="w-full bg-[#777777] rounded-t-sm"
+                  className="w-full bg-[#22c55e] rounded-t-sm"
                   style={{ transformOrigin: "bottom", height: `${pos * 0.5}px` }}
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
                   transition={{ duration: 0.8 }}
                 />
                 <motion.div
-                  className="w-full bg-[#888888] rounded-b-sm"
+                  className="w-full bg-[#E83069] rounded-b-sm"
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
                   style={{ transformOrigin: "top", height: `${neg * 0.3}px` }}
@@ -2376,22 +2527,36 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
           ))}
         </div>
         <div className="flex gap-3 mt-2">
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#777777]" /><span className="text-[10px] text-[#999999]">Positive</span></div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#888888]" /><span className="text-[10px] text-[#999999]">Negative</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#22c55e]" /><span className="text-[10px] text-[#999999]">Positive</span></div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#E83069]" /><span className="text-[10px] text-[#999999]">Negative</span></div>
         </div>
+        <button
+          onClick={() => handleAskPulse("Wave Sentiment Trend")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
       </div>
 
       {/* AI Summary */}
-      <div className="bg-white rounded-2xl p-4 border border-[#DDDDDD]">
+      <div className="group relative bg-gradient-to-br from-[#FFF0F5] to-[#FFFAF5] rounded-2xl p-4 border border-[#FFD6E5] pb-5">
         <div className="flex items-center gap-1.5 mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#555555]" />
-          <span className="text-xs font-semibold text-[#444444]">AI Summary</span>
+          <Sparkles className="w-3.5 h-3.5 text-[#E83069]" />
+          <span className="text-xs font-semibold text-[#E83069]">AI Summary</span>
         </div>
         <p className="text-xs text-[#333333] leading-relaxed">{dataset.aiSummary}</p>
+        <button
+          onClick={() => handleAskPulse("AI Summary")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
       </div>
 
       {/* Top themes */}
-      <div className="bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm">
+      <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
         <div className="text-xs font-semibold text-[#222222] mb-3">Top Themes</div>
         <div className="space-y-2">
           {dataset.topThemes.map((theme, i) => {
@@ -2401,7 +2566,8 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
                 <div className="w-24 text-xs text-[#444444] truncate">{theme}</div>
                 <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-[#333333] to-[#555555] rounded-full"
+                    className="h-full rounded-full"
+                    style={{ backgroundColor: THEME_COLORS[i % THEME_COLORS.length] }}
                     initial={{ width: 0 }}
                     animate={{ width: `${width}%` }}
                     transition={{ duration: 0.8, delay: i * 0.1 }}
@@ -2412,11 +2578,18 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
             );
           })}
         </div>
+        <button
+          onClick={() => handleAskPulse("Top Themes")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
       </div>
 
       {/* Risks */}
       {dataset.risks.length > 0 && (
-        <div className="space-y-2">
+        <div className="group relative space-y-2 pb-5">
           <div className="text-xs font-semibold text-[#222222]">Active Risk Flags</div>
           {dataset.risks.map((risk) => (
             <div key={risk} className="flex items-center gap-2 text-xs text-[#333333] bg-[#F2F2F2] rounded-xl px-3 py-2 border border-[#EBEBEB]">
@@ -2424,6 +2597,13 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
               {risk}
             </div>
           ))}
+          <button
+            onClick={() => handleAskPulse("Risk Flags")}
+            className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+          >
+            <Sparkles className="w-3 h-3" />
+            Ask Pulse
+          </button>
         </div>
       )}
     </div>
@@ -2756,7 +2936,13 @@ function PersistentCopilot({
     if (ctxData.context === "dataset" && ctxData.dataset) {
       msg = `Now focused on **${ctxData.dataset.name}**.\n\nI can see **${ctxData.dataset.sentiment.negative}%** negative sentiment with **${ctxData.dataset.emotionRate}%** emotion rate. The top concern is **${ctxData.dataset.topThemes[0]}**.\n\nWhat would you like to explore?`;
     } else if (ctxData.context === "compare") {
-      msg = "Ready to compare datasets. I'll surface thematic overlaps, sentiment gaps, and key divergences. Which two would you like to compare?";
+      if (ctxData.dataset) {
+        const ds = ctxData.dataset;
+        const other = DATASETS.find(d => d.id !== ds.id) ?? DATASETS[0];
+        msg = `Comparing **${ds.name}** vs **${other.name}**.\n\n• Sentiment gap: **${Math.abs(ds.sentiment.negative - other.sentiment.negative)}pts** on negative sentiment\n• Shared themes: **${ds.topThemes.filter(t => other.topThemes.includes(t)).length || 1}** overlapping\n• Top divergence: **${ds.topThemes[0]}** is prominent in ${ds.name} but less so in ${other.name}\n\nWant me to run a full side-by-side breakdown?`;
+      } else {
+        msg = "Ready to compare datasets. I'll surface thematic overlaps, sentiment gaps, and key divergences. Which two would you like to compare?";
+      }
     } else if (ctxData.context === "report" && ctxData.dataset) {
       msg = `Draft report for **${ctxData.dataset.name}** is open. I can refine sections, add an executive summary, or export to PDF. What would you like to do?`;
     } else if (ctxData.context === "agent") {
