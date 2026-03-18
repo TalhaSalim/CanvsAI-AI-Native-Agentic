@@ -3824,6 +3824,30 @@ function PulsePage({
   const [isTyping, setIsTyping]           = useState(false);
   const [copilotCtx, setCopilotCtx]       = useState<CopilotCtxData>({ context: "default" });
   const [isListening, setIsListening]     = useState(false);
+
+  // ── Split-view state (dataset / compare panel on right) ─────
+  const [pulseRightView, setPulseRightView] = useState<"none" | "dataset" | "compare">("none");
+  const [pulseRightDataset, setPulseRightDataset] = useState<Dataset | null>(null);
+  const [showPulseCompareModal, setShowPulseCompareModal] = useState(false);
+  const [pulseCompareSource, setPulseCompareSource] = useState<Dataset | undefined>(undefined);
+
+  function openPulseDataset(d: Dataset) {
+    setPulseRightDataset(d);
+    setPulseRightView("dataset");
+  }
+  function openPulseCompare(source?: Dataset) {
+    setPulseCompareSource(source);
+    setShowPulseCompareModal(true);
+  }
+  function runPulseCompare(target: Dataset) {
+    setShowPulseCompareModal(false);
+    setPulseRightDataset(target);
+    setPulseRightView("compare");
+  }
+  function closePulseRight() {
+    setPulseRightView("none");
+    setPulseRightDataset(null);
+  }
   const recognitionRef = useRef<typeof window extends { SpeechRecognition: infer T } ? InstanceType<T & (new () => unknown)> : unknown>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
@@ -4004,8 +4028,8 @@ function PulsePage({
   function handleActionClick(action: typeof PULSE_ACTIONS[number]) {
     if (action.resultMode === "compare") {
       addMsg({ role: "user", content: action.title, timestamp: "just now" });
-      if (onCompare) onCompare(DATASETS[0]);
-      aiTypingThen(700, { role: "ai", content: "Opening comparison… Houston and Austin Parking share **62% thematic overlap**. Running the full cross-dataset analysis now.", timestamp: "just now" });
+      aiTypingThen(600, { role: "ai", content: "Opening comparison… Houston and Austin Parking share **62% thematic overlap**. Select a dataset to compare below.", timestamp: "just now" });
+      setTimeout(() => openPulseCompare(DATASETS[0]), 400);
       return;
     }
     if (action.resultMode === "report") {
@@ -4019,9 +4043,10 @@ function PulsePage({
       aiTypingThen(600, { role: "ai", content: "Opening agent configuration…", timestamp: "just now" });
       return;
     }
-    // dataset → respond in chat, no panel
+    // dataset → open split panel + respond in chat
     addMsg({ role: "user", content: action.title, timestamp: "just now" });
-    aiTypingThen(800, { role: "ai", content: `Investigating **Houston Parking — After Prompt Sync**. Here's the dataset overview:`, timestamp: "just now", richType: "dataset", richData: { dataset: DATASETS[0] } });
+    aiTypingThen(700, { role: "ai", content: `Opening **Houston Parking — After Prompt Sync** in the detail panel.`, timestamp: "just now" });
+    setTimeout(() => openPulseDataset(DATASETS[0]), 400);
   }
 
   function handleReportTypeSelect(typeName: string, dataset: Dataset) {
@@ -4067,8 +4092,8 @@ function PulsePage({
       case "dataset":
         return (
           <PulseDatasetBubble
-            onAskDataset={() => { setCopilotCtx({ context: "default", dataset: DATASETS[0] }); setSelectedAction(PULSE_ACTIONS.find(a => a.resultMode === "dataset") ?? PULSE_ACTIONS[2]); }}
-            onCompare={(d) => { if (onCompare) onCompare(d); }}
+            onAskDataset={() => openPulseDataset(DATASETS[0])}
+            onCompare={(d) => openPulseCompare(d)}
             onReportInChat={(d) => { addMsg({ role: "user", content: `Generate report for ${d.name}`, timestamp: "just now" }); aiTypingThen(700, { role: "ai", content: "What type of report would you like?", timestamp: "just now", richType: "report-types", richData: { dataset: d } }); }}
             onAgent={() => { if (onAgent) onAgent(); }}
           />
@@ -4082,11 +4107,48 @@ function PulsePage({
     }
   }
 
-  // ── Full-height chat (no sidebar, no split panel) ──────────
+  // ── Render ─────────────────────────────────────────────────
+  const isSplit = pulseRightView !== "none";
+
   return (
+    <>
     <div className="flex-1 flex overflow-hidden min-h-0">
-      {/* ── Chat panel ──────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-[#FFFAF5]">
+
+      {/* ── Chat panel — animates width when split opens ──── */}
+      <motion.div
+        layout
+        transition={{ type: "spring", stiffness: 300, damping: 32 }}
+        className={cn(
+          "flex flex-col overflow-hidden bg-[#FFFAF5]",
+          isSplit
+            ? "flex-shrink-0 border-r border-[#E9EAEB] shadow-[8px_0_24px_rgba(10,13,18,0.06)]"
+            : "flex-1"
+        )}
+        style={isSplit ? { width: "36%", minWidth: 340, maxWidth: 500 } : {}}
+      >
+        {/* Sub-header (only visible in split mode — matches Asa panel style) */}
+        <AnimatePresence>
+          {isSplit && (
+            <motion.div
+              key="pulse-split-header"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="flex-shrink-0 flex items-center gap-2 px-4 h-11 border-b border-[#E9EAEB] bg-[#FFFAF5]"
+            >
+              <AsaLogoIcon className="w-4 h-4 text-[#E83069] flex-shrink-0" />
+              <span className="text-xs font-semibold text-[#1A1A1A] flex-1 truncate">Asa · Pulse</span>
+              <button
+                onClick={closePulseRight}
+                className="w-6 h-6 rounded-lg hover:bg-black/5 flex items-center justify-center transition-colors flex-shrink-0"
+                title="Close panel"
+              >
+                <X className="w-3.5 h-3.5 text-[#666]" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Scrollable messages */}
         <div className="flex-1 overflow-y-auto">
           <div className="flex flex-col items-center px-4 pt-8 pb-4">
@@ -4306,8 +4368,62 @@ function PulsePage({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* ── Right panel: Dataset detail or Compare ────────── */}
+      <AnimatePresence>
+        {isSplit && (
+          <motion.div
+            key="pulse-right-panel"
+            initial={{ opacity: 0, x: 60 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 60 }}
+            transition={{ type: "spring", stiffness: 300, damping: 32 }}
+            className="flex-1 flex flex-col overflow-hidden bg-[#FFFAF5] min-w-0"
+          >
+            {/* Breadcrumb bar — matches Studio mode */}
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-[#F0F0F0] px-6 py-3 flex items-center gap-3 shadow-sm flex-shrink-0">
+              <button
+                onClick={closePulseRight}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#444444] hover:text-[#1A1A1A] transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to Chat
+              </button>
+              <span className="text-[#E2E2E2]">/</span>
+              <span className="text-xs font-semibold text-[#1A1A1A]">
+                {pulseRightView === "dataset" && (pulseRightDataset?.name ?? "Dataset Detail")}
+                {pulseRightView === "compare"  && "Compare Datasets"}
+              </span>
+            </div>
+
+            {/* Panel content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {pulseRightView === "dataset" && pulseRightDataset && (
+                <DatasetDetailPanel dataset={pulseRightDataset} />
+              )}
+              {pulseRightView === "compare" && (
+                <ComparePanel dataset={pulseRightDataset ?? undefined} />
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
+
+    {/* CompareDatasetModal for Pulse (inline, no navigation) */}
+    <AnimatePresence>
+      {showPulseCompareModal && (
+        <CompareDatasetModal
+          key="pulse-compare-modal"
+          sourceDataset={pulseCompareSource}
+          onClose={() => setShowPulseCompareModal(false)}
+          onRun={runPulseCompare}
+        />
+      )}
+    </AnimatePresence>
+    </>
   );
 }
 
