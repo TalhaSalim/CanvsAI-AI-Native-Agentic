@@ -4092,8 +4092,17 @@ function PulsePage({
       case "dataset":
         return (
           <PulseDatasetBubble
-            onAskDataset={() => openPulseDataset(DATASETS[0])}
-            onCompare={(d) => openPulseCompare(d)}
+            onAskDataset={() => {
+              const ds = DATASETS[0];
+              addMsg({ role: "user", content: `Ask about ${ds.name}`, timestamp: "just now" });
+              aiTypingThen(700, { role: "ai", content: `Sure! **${ds.name}** has **${ds.sentiment.negative}%** negative sentiment and a **${ds.emotionRate}%** emotion rate. The top concern is **${ds.topThemes[0]}**. What would you like to explore?`, timestamp: "just now" });
+              setTimeout(() => openPulseDataset(ds), 400);
+            }}
+            onCompare={(d) => {
+              addMsg({ role: "user", content: `Compare ${d.name}`, timestamp: "just now" });
+              aiTypingThen(600, { role: "ai", content: `Got it — select a dataset to compare against **${d.name}**.`, timestamp: "just now" });
+              setTimeout(() => openPulseCompare(d), 400);
+            }}
             onReportInChat={(d) => { addMsg({ role: "user", content: `Generate report for ${d.name}`, timestamp: "just now" }); aiTypingThen(700, { role: "ai", content: "What type of report would you like?", timestamp: "just now", richType: "report-types", richData: { dataset: d } }); }}
             onAgent={() => { if (onAgent) onAgent(); }}
           />
@@ -4236,9 +4245,23 @@ function PulsePage({
                                 dataset={DATASETS[0]}
                                 index={0}
                                 isSelected={false}
-                                onSelect={() => { setCopilotCtx({ context: "default", dataset: DATASETS[0] }); setSelectedAction(PULSE_ACTIONS.find(a => a.resultMode === "dataset") ?? PULSE_ACTIONS[2]); }}
-                                onAsk={() => { setCopilotCtx({ context: "default", dataset: DATASETS[0] }); }}
-                                onCompare={(d) => { if (onCompare) onCompare(d); }}
+                                onSelect={(d) => {
+                                  const ds = d ?? DATASETS[0];
+                                  addMsg({ role: "user", content: `Open ${ds.name}`, timestamp: "just now" });
+                                  aiTypingThen(600, { role: "ai", content: `Opening **${ds.name}** in the detail panel.`, timestamp: "just now" });
+                                  setTimeout(() => openPulseDataset(ds), 400);
+                                }}
+                                onAsk={(d) => {
+                                  const ds = d ?? DATASETS[0];
+                                  addMsg({ role: "user", content: `Ask about ${ds.name}`, timestamp: "just now" });
+                                  aiTypingThen(700, { role: "ai", content: `Sure! I've pulled up **${ds.name}** for you. It has **${ds.sentiment.negative}%** negative sentiment and a **${ds.emotionRate}%** emotion rate. The top concern is **${ds.topThemes[0]}**. What would you like to explore?`, timestamp: "just now" });
+                                  setTimeout(() => openPulseDataset(ds), 400);
+                                }}
+                                onCompare={(d) => {
+                                  addMsg({ role: "user", content: `Compare ${d.name}`, timestamp: "just now" });
+                                  aiTypingThen(600, { role: "ai", content: `Got it — select a dataset to compare against **${d.name}**.`, timestamp: "just now" });
+                                  setTimeout(() => openPulseCompare(d), 400);
+                                }}
                                 onReport={(d) => { addMsg({ role: "user", content: `Generate report for ${d.name}`, timestamp: "just now" }); aiTypingThen(700, { role: "ai", content: "What type of report would you like?", timestamp: "just now", richType: "report-types", richData: { dataset: d } }); }}
                                 onAgent={() => { if (onAgent) onAgent(); }}
                               />
