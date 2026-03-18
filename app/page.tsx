@@ -2364,6 +2364,73 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
       {/* Dataset Health & Quality */}
       <DatasetHealthCards dataset={dataset} />
 
+      {/* AI Summary + Top Themes + Risk Flags — combined card */}
+      <div className="group relative bg-gradient-to-br from-[#FFF0F5] to-[#FFFAF5] rounded-2xl border border-[#FFD6E5] p-4 pb-5 space-y-4">
+
+        {/* AI Summary */}
+        <div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-[#E83069]" />
+            <span className="text-xs font-semibold text-[#E83069]">AI Summary</span>
+          </div>
+          <p className="text-xs text-[#333333] leading-relaxed">{dataset.aiSummary}</p>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-[#FFD6E5]" />
+
+        {/* Top Themes */}
+        <div>
+          <div className="text-xs font-semibold text-[#1A1A1A] mb-2.5">Top Themes</div>
+          <div className="space-y-2">
+            {dataset.topThemes.map((theme, i) => {
+              const width = 90 - i * 15;
+              return (
+                <div key={theme} className="flex items-center gap-2">
+                  <div className="w-24 text-xs text-[#444444] truncate">{theme}</div>
+                  <div className="flex-1 h-1.5 bg-[#FFD6E5]/50 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: THEME_COLORS[i % THEME_COLORS.length] }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${width}%` }}
+                      transition={{ duration: 0.8, delay: i * 0.1 }}
+                    />
+                  </div>
+                  <span className="text-xs text-[#999999] w-8 text-right">{width}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Active Risk Flags — only if any */}
+        {dataset.risks.length > 0 && (
+          <>
+            <div className="border-t border-[#FFD6E5]" />
+            <div>
+              <div className="text-xs font-semibold text-[#1A1A1A] mb-2">Active Risk Flags</div>
+              <div className="space-y-1.5">
+                {dataset.risks.map((risk) => (
+                  <div key={risk} className="flex items-center gap-2 text-xs text-[#E83069] bg-[#FFF0F5] rounded-xl px-3 py-2 border border-[#FFD6E5]">
+                    <Flag className="w-3 h-3 flex-shrink-0 text-[#E83069]" />
+                    {risk}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <button
+          onClick={() => handleAskPulse("AI Summary & Themes")}
+          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
+        >
+          <Sparkles className="w-3 h-3" />
+          Ask Pulse
+        </button>
+      </div>
+
       {/* Sentiment Breakdown */}
       <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
         <div className="text-xs font-semibold text-[#222222] mb-2 flex items-center gap-1.5">
@@ -2541,73 +2608,6 @@ function DatasetDetailPanel({ dataset }: { dataset: Dataset }) {
         </button>
       </div>
 
-      {/* AI Summary */}
-      <div className="group relative bg-gradient-to-br from-[#FFF0F5] to-[#FFFAF5] rounded-2xl p-4 border border-[#FFD6E5] pb-5">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#E83069]" />
-          <span className="text-xs font-semibold text-[#E83069]">AI Summary</span>
-        </div>
-        <p className="text-xs text-[#333333] leading-relaxed">{dataset.aiSummary}</p>
-        <button
-          onClick={() => handleAskPulse("AI Summary")}
-          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
-        >
-          <Sparkles className="w-3 h-3" />
-          Ask Pulse
-        </button>
-      </div>
-
-      {/* Top themes */}
-      <div className="group relative bg-white rounded-2xl border border-[#F5F5F5] p-4 shadow-sm pb-5">
-        <div className="text-xs font-semibold text-[#222222] mb-3">Top Themes</div>
-        <div className="space-y-2">
-          {dataset.topThemes.map((theme, i) => {
-            const width = 90 - i * 15;
-            return (
-              <div key={theme} className="flex items-center gap-2">
-                <div className="w-24 text-xs text-[#444444] truncate">{theme}</div>
-                <div className="flex-1 h-1.5 bg-[#F5F5F5] rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ backgroundColor: THEME_COLORS[i % THEME_COLORS.length] }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${width}%` }}
-                    transition={{ duration: 0.8, delay: i * 0.1 }}
-                  />
-                </div>
-                <span className="text-xs text-[#999999] w-8 text-right">{width}%</span>
-              </div>
-            );
-          })}
-        </div>
-        <button
-          onClick={() => handleAskPulse("Top Themes")}
-          className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
-        >
-          <Sparkles className="w-3 h-3" />
-          Ask Pulse
-        </button>
-      </div>
-
-      {/* Risks */}
-      {dataset.risks.length > 0 && (
-        <div className="group relative space-y-2 pb-5">
-          <div className="text-xs font-semibold text-[#222222]">Active Risk Flags</div>
-          {dataset.risks.map((risk) => (
-            <div key={risk} className="flex items-center gap-2 text-xs text-[#333333] bg-[#F2F2F2] rounded-xl px-3 py-2 border border-[#EBEBEB]">
-              <Flag className="w-3 h-3 flex-shrink-0" />
-              {risk}
-            </div>
-          ))}
-          <button
-            onClick={() => handleAskPulse("Risk Flags")}
-            className="absolute -bottom-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-[#E83069] text-white text-[11px] font-semibold rounded-full shadow-lg hover:bg-[#C71E52]"
-          >
-            <Sparkles className="w-3 h-3" />
-            Ask Pulse
-          </button>
-        </div>
-      )}
     </div>
   );
 }
