@@ -148,6 +148,8 @@ interface CopilotMsg {
   content: string;
   timestamp: string;
   proactive?: boolean;
+  richCard?: "dataset";
+  richDataset?: Dataset;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -2950,10 +2952,24 @@ function PersistentCopilot({
     }
 
     if (msg) {
-      setMessages((prev) => [
-        ...prev,
-        { id: makeId(), role: "ai", content: msg, timestamp: "just now" },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          { id: makeId(), role: "ai" as const, content: msg, timestamp: "just now" },
+        ];
+        // For dataset context, append an inline dataset card as the next message
+        if (ctxData.context === "dataset" && ctxData.dataset) {
+          next.push({
+            id: makeId(),
+            role: "ai" as const,
+            content: "",
+            timestamp: "just now",
+            richCard: "dataset",
+            richDataset: ctxData.dataset,
+          });
+        }
+        return next;
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctxData.context, ctxData.dataset?.id]);
@@ -3100,6 +3116,56 @@ function PersistentCopilot({
                     {msg.content}
                   </div>
                 </div>
+              ) : msg.richCard === "dataset" && msg.richDataset ? (
+                /* ── Inline Dataset Intelligence card ── */
+                <div className="flex gap-2.5">
+                  <div className="w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <img src="https://www.figma.com/api/mcp/asset/e02029fc-00e6-42ea-b44e-6899c1727596" alt="Asa" className="w-5 h-5 block" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Database className="w-3.5 h-3.5 text-[#E83069]" />
+                      <span className="text-[10px] font-semibold text-[#555]">Dataset Intelligence</span>
+                    </div>
+                    <div className="bg-[#FFFDFC] rounded-xl p-3 border border-[#E9EAEB]">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-[#02192B] flex items-center justify-center shadow-sm">
+                            <Database className="w-3 h-3 text-white" />
+                          </div>
+                          <span className="text-xs font-semibold text-[#1A1A1A] truncate max-w-[150px]">{msg.richDataset.name}</span>
+                        </div>
+                        <StatusBadge status={msg.richDataset.status} />
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { label: "Positive", value: `${msg.richDataset.sentiment.positive}%`, color: "text-[#16a34a]", bg: "bg-[#F0FFF4]", border: "border-[#BBF7D0]" },
+                          { label: "Negative", value: `${msg.richDataset.sentiment.negative}%`, color: "text-[#E83069]",  bg: "bg-[#FFF0F5]", border: "border-[#FFD6E5]" },
+                          { label: "Emotion",  value: `${msg.richDataset.emotionRate}%`,         color: "text-[#7C3AED]", bg: "bg-[#F5F3FF]", border: "border-[#DDD6FE]" },
+                        ].map((s) => (
+                          <div key={s.label} className={cn("rounded-lg p-1.5 text-center border", s.bg, s.border)}>
+                            <div className={cn("text-xs font-bold", s.color)}>{s.value}</div>
+                            <div className="text-[10px] text-[#808080]">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-1.5 mt-2">
+                        <button
+                          onClick={() => onOpenDetail("dataset", msg.richDataset)}
+                          className="flex-1 text-xs py-1.5 rounded-lg bg-[#02192B] text-white font-medium hover:bg-[#02192B]/90 transition-colors text-center"
+                        >
+                          Open Full Analysis
+                        </button>
+                        <button
+                          onClick={() => onOpenDetail("report", msg.richDataset)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E9EAEB] text-xs text-[#414651] font-medium hover:bg-[#FFFAF5] transition-colors"
+                        >
+                          Report
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="flex gap-2.5">
                   <div className="w-6 h-6 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -3142,62 +3208,6 @@ function PersistentCopilot({
         )}
         <div ref={bottomRef} />
       </div>
-
-      {/* Dataset Intelligence card — appears after messages when a dataset is focused */}
-      <AnimatePresence mode="wait">
-        {ctxData.context === "dataset" && ctxData.dataset && (
-          <motion.div
-            key={ctxData.dataset.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={{ duration: 0.25 }}
-            className="px-4 pb-3 flex-shrink-0"
-          >
-            <div className="flex items-center gap-1.5 mb-2">
-              <Database className="w-3.5 h-3.5 text-[#E83069]" />
-              <span className="text-xs font-semibold text-[#555]">Dataset Intelligence</span>
-            </div>
-            <div className="bg-[#FFFDFC] rounded-xl p-3 border border-[#E9EAEB]">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[#02192B] flex items-center justify-center shadow-sm">
-                    <Database className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-[#1A1A1A] truncate max-w-[170px]">{ctxData.dataset.name}</span>
-                </div>
-                <StatusBadge status={ctxData.dataset.status} />
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { label: "Positive", value: `${ctxData.dataset.sentiment.positive}%`, color: "text-[#16a34a]", bg: "bg-[#F0FFF4]", border: "border-[#BBF7D0]" },
-                  { label: "Negative", value: `${ctxData.dataset.sentiment.negative}%`, color: "text-[#E83069]", bg: "bg-[#FFF0F5]", border: "border-[#FFD6E5]" },
-                  { label: "Emotion",  value: `${ctxData.dataset.emotionRate}%`,          color: "text-[#7C3AED]", bg: "bg-[#F5F3FF]", border: "border-[#DDD6FE]" },
-                ].map((s) => (
-                  <div key={s.label} className={cn("rounded-lg p-1.5 text-center border", s.bg, s.border)}>
-                    <div className={cn("text-xs font-bold", s.color)}>{s.value}</div>
-                    <div className="text-[10px] text-[#808080]">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-1.5 mt-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onOpenDetail("dataset", ctxData.dataset); }}
-                  className="flex-1 text-xs py-1.5 rounded-lg bg-[#02192B] text-white font-medium hover:bg-[#02192B]/90 transition-colors text-center"
-                >
-                  Open Full Analysis
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onOpenDetail("report", ctxData.dataset); }}
-                  className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E9EAEB] text-xs text-[#414651] font-medium hover:bg-[#FFFAF5] transition-colors"
-                >
-                  Report
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Suggestion chips */}
       <div className="px-4 pb-2 flex-shrink-0">
