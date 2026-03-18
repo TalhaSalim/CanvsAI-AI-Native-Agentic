@@ -3084,57 +3084,6 @@ function PersistentCopilot({
         </div>
       </div>
 
-      {/* Dataset context module — shown when a dataset is selected */}
-      <AnimatePresence mode="wait">
-        {ctxData.context === "dataset" && ctxData.dataset && (
-          <motion.div
-            key={ctxData.dataset.id}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-4 pt-3 flex-shrink-0 overflow-hidden"
-          >
-            <div className="bg-[#FFFDFC] rounded-xl p-3 border border-[#E9EAEB]">
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[#02192B] flex items-center justify-center shadow-sm">
-                    <Database className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-xs font-semibold text-[#1A1A1A] truncate max-w-[170px]">{ctxData.dataset.name}</span>
-                </div>
-                <StatusBadge status={ctxData.dataset.status} />
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { label: "Positive", value: `${ctxData.dataset.sentiment.positive}%`, color: "text-[#1A1A1A]", bg: "bg-[#FFFAF5]" },
-                  { label: "Negative", value: `${ctxData.dataset.sentiment.negative}%`, color: "text-[#1A1A1A]", bg: "bg-[#FFFAF5]" },
-                  { label: "Emotion", value: `${ctxData.dataset.emotionRate}%`, color: "text-[#414651]", bg: "bg-[#FFFAF5]" },
-                ].map((s) => (
-                  <div key={s.label} className={cn("rounded-lg p-1.5 text-center border border-[#E9EAEB]", s.bg)}>
-                    <div className={cn("text-xs font-bold", s.color)}>{s.value}</div>
-                    <div className="text-[10px] text-[#808080]">{s.label}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-1.5 mt-2">
-                <button
-                  onClick={(e) => { e.stopPropagation(); onOpenDetail("dataset", ctxData.dataset); }}
-                  className="flex-1 text-xs py-1.5 rounded-lg bg-[#02192B] text-white font-medium hover:bg-[#02192B]/90 transition-colors text-center"
-                >
-                  Open Full Analysis
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onOpenDetail("report", ctxData.dataset); }}
-                  className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E9EAEB] text-xs text-[#414651] font-medium hover:bg-[#FFFAF5] transition-colors"
-                >
-                  Report
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0" style={{ scrollbarWidth: "none" }}>
         <AnimatePresence initial={false}>
@@ -3193,6 +3142,62 @@ function PersistentCopilot({
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Dataset Intelligence card — appears after messages when a dataset is focused */}
+      <AnimatePresence mode="wait">
+        {ctxData.context === "dataset" && ctxData.dataset && (
+          <motion.div
+            key={ctxData.dataset.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.25 }}
+            className="px-4 pb-3 flex-shrink-0"
+          >
+            <div className="flex items-center gap-1.5 mb-2">
+              <Database className="w-3.5 h-3.5 text-[#E83069]" />
+              <span className="text-xs font-semibold text-[#555]">Dataset Intelligence</span>
+            </div>
+            <div className="bg-[#FFFDFC] rounded-xl p-3 border border-[#E9EAEB]">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-[#02192B] flex items-center justify-center shadow-sm">
+                    <Database className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#1A1A1A] truncate max-w-[170px]">{ctxData.dataset.name}</span>
+                </div>
+                <StatusBadge status={ctxData.dataset.status} />
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { label: "Positive", value: `${ctxData.dataset.sentiment.positive}%`, color: "text-[#16a34a]", bg: "bg-[#F0FFF4]", border: "border-[#BBF7D0]" },
+                  { label: "Negative", value: `${ctxData.dataset.sentiment.negative}%`, color: "text-[#E83069]", bg: "bg-[#FFF0F5]", border: "border-[#FFD6E5]" },
+                  { label: "Emotion",  value: `${ctxData.dataset.emotionRate}%`,          color: "text-[#7C3AED]", bg: "bg-[#F5F3FF]", border: "border-[#DDD6FE]" },
+                ].map((s) => (
+                  <div key={s.label} className={cn("rounded-lg p-1.5 text-center border", s.bg, s.border)}>
+                    <div className={cn("text-xs font-bold", s.color)}>{s.value}</div>
+                    <div className="text-[10px] text-[#808080]">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-1.5 mt-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onOpenDetail("dataset", ctxData.dataset); }}
+                  className="flex-1 text-xs py-1.5 rounded-lg bg-[#02192B] text-white font-medium hover:bg-[#02192B]/90 transition-colors text-center"
+                >
+                  Open Full Analysis
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onOpenDetail("report", ctxData.dataset); }}
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-[#E9EAEB] text-xs text-[#414651] font-medium hover:bg-[#FFFAF5] transition-colors"
+                >
+                  Report
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Suggestion chips */}
       <div className="px-4 pb-2 flex-shrink-0">
